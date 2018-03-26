@@ -1,0 +1,7 @@
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- distclean
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- tisdk_am3x-evm_defconfig
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- menuconfig
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- zImage -j4
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- am335x-evm.dtb
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- modules
+sudo make ARCH=arm INSTALL_MOD_PATH=<path to root of file system> modules_install
