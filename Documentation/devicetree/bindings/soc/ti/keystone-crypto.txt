@@ -1,0 +1,78 @@
+Keystone Crypto Driver
+
+This document explains the device tree bindings for the side-band Security
+Accelerator on keystone devices.
+
+Required properties:
+ - compatible: should be "ti,netcp-sa-crypto".
+
+ - clock: phandle to clksa clock.
+
+ - clock-names: functional clock name. Should be set to "fck".
+
+ - syscon-subsys: phandle to sa_config node, which represent registers common,
+        for SA and HWRNG modules.
+
+ - ti,navigator-dmas and ti,navigator-dma-names: Security accelerator uses
+	2 dma channels. Rx and Tx. The first property is the pandle to the
+	knav_dmas subsystem and flow for RX channel and channel number for
+	TX channel. The second property is corresponding channel names.
+
+ - ti,rx-channel: name of RX channel.
+
+ - ti,rx-queue-depth: RX channel may use upto 4 free descriptor queue.
+	rx-queue-depth describes number of buffers in each queue.
+
+ - ti,rx-compl-queue: RX completion queue number.
+
+ - ti,rx-pool: number of buffer descriptos and region for rx-pool.
+
+ - ti,tx-channel: name of TX channel.
+
+ - ti,tx-queue-depth: number of TX descriptos.
+
+ - ti,tx-completion-queue: TX completion queue number.
+
+ - ti,tx-pool: number of buffer descriptos and region for tx-pool.
+
+ - ti,tx-submit-queue: submition queue number for TX channel.
+
+ - ti,sc-id: range of security contex IDs available for driver
+
+
+Example for K2HK:
+
+sa_subsys: subsys@20c0000 {
+	#address-cells = <1>;
+	#size-cells = <1>;
+	ranges = <0 0x20c0000 0x40000>;
+	compatible = "simple-bus";
+
+	sa_config: subsys {
+		compatible = "syscon";
+		reg = <0x0 0x100>;
+	};
+
+	crypto {
+		compatible = "ti,netcp-sa-crypto";
+		syscon-subsys = <&sa_config>;
+		clocks = <&clksa>;
+		clock-names = "fck";
+
+		ti,navigator-dmas = <&dma_gbe 26>, <&dma_gbe 6>;
+		ti,navigator-dma-names = "crypto-rx", "crypto-tx";
+
+		ti,rx-channel = "crypto-rx";
+		ti,rx-queue-depth = <256 64 0 0>;
+		ti,rx-compl-queue = <8712>;
+		ti,rx-pool	= <512 12>;
+
+		ti,tx-channel = "crypto-tx";
+		ti,tx-queue-depth = <256>;
+		ti,tx-completion-queue = <8713>;
+		ti,tx-pool = <512 12>;
+		ti,tx-submit-queue = <646>;
+
+		ti,sc-id = <0x7000 0x71ff>;
+	};
+};

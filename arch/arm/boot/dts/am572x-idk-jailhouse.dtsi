@@ -1,0 +1,104 @@
+/*
+ * Copyright (C) 2017 Texas Instruments Incorporated - http://www.ti.com/
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+/ {
+	reserved-memory {
+		jailhouse: jailhouse@ef000000 {
+			reg = <0x0 0xef000000 0x0 0x1000000>;
+			no-map;
+			status = "okay";
+		};
+
+		jh_inmate: jh_inmate@ee000000 {
+			reg = <0x0 0xe0000000 0x0 0xf000000>;
+			no-map;
+			status = "okay";
+		};
+	};
+};
+
+&timer2 {
+	status = "disabled";
+	ti,no-idle;
+};
+
+&timer8 {
+	status = "disabled";
+	ti,no-idle;
+};
+
+&uart9 {
+	status = "disabled";
+	ti,no-idle;
+};
+
+/ {
+	ocp {
+		pruss1_eth {
+			status = "disabled";
+		};
+
+		pruss2_eth {
+			status = "disabled";
+		};
+
+		crossbar_mpu: crossbar@4a002a48 {
+			ti,irqs-skip = <10 44 127 129 133 134 135 136 137 139 140>;
+		};
+	};
+};
+
+&pruss1 {
+	status = "disabled";
+	ti,no-idle;
+};
+
+&pru1_0 {
+	status = "disabled";
+	ti,no-idle;
+};
+
+&pru1_1 {
+	status = "disabled";
+	ti,no-idle;
+};
+
+&pruss2 {
+	status = "disabled";
+	ti,no-idle;
+};
+
+&pru2_0 {
+	status = "disabled";
+	ti,no-idle;
+};
+
+&pru2_1 {
+	ti,no-idle;
+	status = "disabled";
+};
+
+&pruss1_mdio {
+	ti,no-idle;
+	status = "disabled";
+};
+
+&pruss2_mdio {
+	ti,no-idle;
+	status = "disabled";
+};
+
+&gpio5 {
+	ti,no-idle;
+	status = "disabled";
+};
+
+&gpio3 {
+	ti,no-idle;
+	status = "disabled";
+};

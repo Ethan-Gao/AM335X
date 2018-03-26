@@ -1,0 +1,43 @@
+/*
+ * Copyright (C) 2017 Texas Instruments Incorporated - http://www.ti.com/
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#include "am57xx-evm-reva3.dts"
+
+/ {
+	reserved-memory {
+		jailhouse: jailhouse@ef000000 {
+			reg = <0x0 0xef000000 0x0 0x1000000>;
+			no-map;
+			status = "okay";
+		};
+
+		jh_inmate: jh_inmate@ee000000 {
+			reg = <0x0 0xe0000000 0x0 0xf000000>;
+			no-map;
+			status = "okay";
+		};
+	};
+};
+
+&timer8 {
+	status = "disabled";
+	ti,no-idle;
+};
+
+&uart9 {
+	status = "disabled";
+	ti,no-idle;
+};
+
+/ {
+	ocp {
+		crossbar_mpu: crossbar@4a002a48 {
+			ti,irqs-skip = <10 133 134 135 139 140>;
+		};
+	};
+};

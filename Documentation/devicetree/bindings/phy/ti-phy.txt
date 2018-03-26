@@ -1,0 +1,409 @@
+TI PHY: DT DOCUMENTATION FOR PHYs in TI PLATFORMs
+
+OMAP CONTROL PHY
+
+Required properties:
+ - compatible: Should be one of
+ "ti,control-phy-otghs" - if it has otghs_control mailbox register as on OMAP4.
+ "ti,control-phy-usb2" - if it has Power down bit in control_dev_conf register
+                        e.g. USB2_PHY on OMAP5.
+ "ti,control-phy-pipe3" - if it has DPLL and individual Rx & Tx power control
+                        e.g. USB3 PHY and SATA PHY on OMAP5.
+ "ti,control-phy-pcie" - for pcie to support external clock for pcie and to
+			set PCS delay value.
+			e.g. PCIE PHY in DRA7x
+ "ti,control-phy-usb2-dra7" - if it has power down register like USB2 PHY on
+                        DRA7 platform.
+ "ti,control-phy-usb2-am437" - if it has power down register like USB2 PHY on
+                        AM437 platform.
+ - reg : register ranges as listed in the reg-names property
+ - reg-names: "otghs_control" for control-phy-otghs
+	      "power", "pcie_pcs" and "control_sma" for control-phy-pcie
+	      "power" for all other types
+
+omap_control_usb: omap-control-usb@4a002300 {
+        compatible = "ti,control-phy-otghs";
+        reg = <0x4a00233c 0x4>;
+        reg-names = "otghs_control";
+};
+
+OMAP USB2 PHY
+
+Required properties:
+ - compatible: Should be "ti,omap-usb2"
+	       Should be "ti,dra7x-usb2" for the 1st instance of USB2 PHY on
+	       DRA7x
+	       Should be "ti,dra7x-usb2-phy2" for the 2nd instance of USB2 PHY
+	       in DRA7x
+ - reg : Address and length of the register set for the device.
+ - #phy-cells: determine the number of cells that should be given in the
+   phandle while referencing this phy.
+ - clocks: a list of phandles and clock-specifier pairs, one for each entry in
+   clock-names.
+ - clock-names: should include:
+   * "wkupclk" - wakeup clock.
+   * "refclk" - reference clock (optional).
+
+Deprecated properties:
+ - ctrl-module : phandle of the control module used by PHY driver to power on
+   the PHY.
+
+Recommended properies:
+- syscon-phy-power : phandle/offset pair. Phandle to the system control
+  module and the register offset to power on/off the PHY.
+
+This is usually a subnode of ocp2scp to which it is connected.
+
+usb2phy@4a0ad080 {
+	compatible = "ti,omap-usb2";
+	reg = <0x4a0ad080 0x58>;
+	ctrl-module = <&omap_control_usb>;
+	#phy-cells = <0>;
+	clocks = <&usb_phy_cm_clk32k>, <&usb_otg_ss_refclk960m>;
+	clock-names = "wkupclk", "refclk";
+};
+
+TI PIPE3 PHY
+
+Required properties:
+ - compatible: Should be "ti,phy-usb3", "ti,phy-pipe3-sata" or
+   "ti,phy-pipe3-pcie. "ti,omap-usb3" is deprecated.
+ - reg : Address and length of the register set for the device.
+ - reg-names: The names of the register addresses corresponding to the registers
+   filled in "reg".
+ - #phy-cells: determine the number of cells that should be given in the
+   phandle while referencing this phy.
+ - clocks: a list of phandles and clock-specifier pairs, one for each entry in
+   clock-names.
+ - clock-names: should include:
+   * "wkupclk" - wakeup clock.
+   * "sysclk" - system clock.
+   * "refclk" - reference clock.
+   * "dpll_ref" - external dpll ref clk
+   * "dpll_ref_m2" - external dpll ref clk
+   * "phy-div" - divider for apll
+   * "div-clk" - apll clock
+
+Optional properties:
+ - id: If there are multiple instance of the same type, in order to
+   differentiate between each instance "id" can be used (e.g., multi-lane PCIe
+   PHY). If "id" is not provided, it is set to default value of '1'.
+ - syscon-pllreset: Handle to system control region that contains the
+   CTRL_CORE_SMA_SW_0 register and register offset to the CTRL_CORE_SMA_SW_0
+   register that contains the SATA_PLL_SOFT_RESET bit. Only valid for sata_phy.
+ - syscon-pcs : phandle/offset pair. Phandle to the system control module and the
+   register offset to write the PCS delay value.
+
+Deprecated properties:
+ - ctrl-module : phandle of the control module used by PHY driver to power on
+   the PHY.
+
+Recommended properies:
+ - syscon-phy-power : phandle/offset pair. Phandle to the system control
+   module and the register offset to power on/off the PHY.
+
+This is usually a subnode of ocp2scp to which it is connected.
+
+usb3phy@4a084400 {
+	compatible = "ti,phy-usb3";
+	reg = <0x4a084400 0x80>,
+	      <0x4a084800 0x64>,
+	      <0x4a084c00 0x40>;
+	reg-names = "phy_rx", "phy_tx", "pll_ctrl";
+	ctrl-module = <&omap_control_usb>;
+	#phy-cells = <0>;
+	clocks = <&usb_phy_cm_clk32k>,
+		 <&sys_clkin>,
+		 <&usb_otg_ss_refclk960m>;
+	clock-names =	"wkupclk",
+			"sysclk",
+			"refclk";
+};
+
+sata_phy: phy@4A096000 {
+	compatible = "ti,phy-pipe3-sata";
+	reg = <0x4A096000 0x80>, /* phy_rx */
+	      <0x4A096400 0x64>, /* phy_tx */
+	      <0x4A096800 0x40>; /* pll_ctrl */
+	reg-names = "phy_rx", "phy_tx", "pll_ctrl";
+	ctrl-module = <&omap_control_sata>;
+	clocks = <&sys_clkin1>, <&sata_ref_clk>;
+	clock-names = "sysclk", "refclk";
+	syscon-pllreset = <&scm_conf 0x3fc>;
+	#phy-cells = <0>;
+
+TI Keystone SerDes PHY
+======================
+
+Required properties:
+ - compatible: should be one of
+	* "ti,keystone-serdes-gbe"
+	* "ti,keystone-serdes-xgbe"
+	* "ti,keystone-serdes-pcie"
+ - reg:
+	* base address and length of the SerDes register set
+ - num-lanes:
+	* Number of lanes in SerDes.
+
+Optional properties:
+ - syscon-peripheral:
+	* Handle to the subsystem register region of the peripheral
+	  inside which the SerDes exists.  Required for 10gbe.
+ - syscon-link:
+	* Handle to the Link register region of the peripheral inside
+	  which the SerDes exists.  Example: it is the PCSR register
+	  region in the case of 10gbe.  Required for 10gbe.
+ - rx-force-enable:
+	* Include this property if receiver attenuation and boost are
+	  to be configured with specific values defined in rx-force.
+ - link-rate-kbps:
+	* SerDes link rate to be configured, in kbps.
+
+
+For gbe and 10gbe SerDes, it is optional to represent each lane as
+a sub-node, which can be enabled or disabled individually using
+the "status" property.  If a lane is not represented by a node, the
+lane is disabled.
+
+Required properties (lane sub-node):
+ - #phy-cells:
+	* From the generic phy bindings, must be 0;
+ - reg:
+	* lane number
+
+Optional properties (lane sub-node):
+ - control-rate:
+	* Lane control rate
+		0: full rate
+		1: half rate
+		2: quarter rate
+ - rx-start:
+	* Initial lane rx equalizer attenuation and boost configurations.
+	* Must be array of 2 integers.
+ - rx-force:
+	* Forced lane rx equalizer attenuation and boost configurations.
+	* Must be array of 2 integers.
+ - tx-coeff:
+	* Lane c1, c2, cm, attenuation and regulator output voltage
+	  configurations.
+	* Must be array of 5 integers.
+ - loopback:
+	* Include this property to enable loopback at the SerDes
+	  lane level.
+
+Example for Keystone K2E GBE:
+-----------------------------
+
+gbe_serdes0: phy@232a000 {
+	compatible		= "ti,keystone-serdes-gbe";
+	reg			= <0x0232a000 0x2000>;
+	link-rate-kbps		= <1250000>;
+	num-lanes		= <4>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	serdes0_lane0: lane@0 {
+		status		= "ok";
+		#phy-cells	= <0>;
+		reg		= <0>;
+		control-rate	= <2>;
+		rx-start	= <7 5>;
+		rx-force	= <1 1>;
+		tx-coeff	= <0 0 0 12 4>;
+	};
+	serdes0_lane1: lane@1 {
+		status		= "ok";
+		#phy-cells	= <0>;
+		reg		= <1>;
+		control-rate	= <2>;
+		rx-start	= <7 5>;
+		rx-force	= <1 1>;
+		tx-coeff	= <0 0 0 12 4>;
+	};
+	serdes0_lane2: lane@2 {
+		status		= "disabled";
+		#phy-cells	= <0>;
+		reg		= <2>;
+		control-rate	= <2>;
+		rx-start	= <7 5>;
+		rx-force	= <1 1>;
+		tx-coeff	= <0 0 0 12 4>;
+	};
+	serdes0_lane3: lane@3 {
+		status		= "disabled";
+		#phy-cells	= <0>;
+		reg		= <3>;
+		control-rate	= <2>;
+		rx-start	= <7 5>;
+		rx-force	= <1 1>;
+		tx-coeff	= <0 0 0 12 4>;
+	};
+};
+
+gbe_serdes1: phy@2324000 {
+	compatible		= "ti,keystone-serdes-gbe";
+	reg			= <0x02324000 0x2000>;
+	link-rate-kbps		= <1250000>;
+	num-lanes		= <4>;
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	serdes1_lane0: lane@0 {
+		status		= "disabled";
+		#phy-cells	= <0>;
+		reg		= <0>;
+		control-rate	= <2>;
+		rx-start	= <7 5>;
+		rx-force	= <1 1>;
+		tx-coeff	= <0 0 0 12 4>;
+	};
+	serdes1_lane1: lane@1 {
+		status		= "disabled";
+		#phy-cells	= <0>;
+		reg		= <1>;
+		control-rate	= <2>;
+		rx-start	= <7 5>;
+		rx-force	= <1 1>;
+		tx-coeff	= <0 0 0 12 4>;
+	};
+	serdes1_lane2: lane@2 {
+		status		= "disabled";
+		#phy-cells	= <0>;
+		reg		= <2>;
+		control-rate	= <2>;
+		rx-start	= <7 5>;
+		rx-force	= <1 1>;
+		tx-coeff	= <0 0 0 12 4>;
+	};
+	serdes1_lane3: lane@3 {
+		status		= "disabled";
+		#phy-cells	= <0>;
+		reg		= <3>;
+		control-rate	= <2>;
+		rx-start	= <7 5>;
+		rx-force	= <1 1>;
+		tx-coeff	= <0 0 0 12 4>;
+	};
+};
+
+netcp: netcp@24000000 {
+	...
+
+	netcp-devices {
+		...
+
+		gbe@200000 {
+			...
+
+			gbe0: interface-0 {
+				phys = <&serdes0_lane0>;
+				...
+			};
+			gbe1: interface-1 {
+				phys = <&serdes0_lane1>;
+				...
+			};
+
+			...
+		};
+
+		...
+	};
+};
+
+Example for Keystone PCIE:
+--------------------------
+
+	pcie0_phy: phy@2320000 {
+		compatible = "ti,keystone-serdes-pcie";
+		reg = <0x02320000 0x4000>;
+		link-rate-kbps = <5000000>;
+		num-lanes = <2>;
+	};
+
+No SerDes phy handle needed in PCIe controller node
+since the SerDes PHY provider driver performs all
+the configurations needed for PCIe.
+
+Example for K2E 10GBE:
+----------------------
+
+Define the syscon regmaps for 10gbe subsystem:
+
+xgbe_subsys: subsys@2f00000 {
+	status		= "ok";
+	compatible	= "syscon";
+	reg		= <0x02f00000 0x100>;
+};
+
+Define the syscon regmaps for 10gbe pcsr:
+
+xgbe_pcsr: pcsr@2f00000 {
+	status		= "ok";
+	compatible	= "syscon";
+	reg		= <0x02f00600 0x100>;
+};
+
+Define the 10gbe SerDes node:
+
+xgbe_serdes: phy@231e000 {
+	status			= "ok";
+	compatible		= "ti,keystone-serdes-xgbe";
+	reg			= <0x0231e000 0x2000>;
+	link-rate-kbps		= <10312500>;
+	num-lanes		= <2>;
+	syscon-peripheral	= <&xgbe_subsys>;
+	syscon-link		= <&xgbe_pcsr>;
+	#address-cells  = <1>;
+	#size-cells     = <0>;
+
+	xserdes_lane0: lane@0 {
+		status		= "ok";
+		#phy-cells	= <0>;
+		reg		= <0>;
+		control-rate	= <0>;
+		rx-start	= <7 5>;
+		rx-force	= <1 1>;
+		tx-coeff	= <2 0 0 12 4>;
+	};
+	xserdes_lane1: lane@1 {
+		status		= "ok";
+		#phy-cells	= <0>;
+		reg		= <1>;
+		control-rate	= <0>;
+		rx-start	= <7 5>;
+		rx-force	= <1 1>;
+		tx-coeff	= <2 0 0 12 4>;
+	};
+};
+
+Then the 10gbe SerDes PHY can be used in the 10gbe switch node:
+
+netcpx: netcpx@2f00000 {
+
+	...
+
+	netcp-devices {
+
+		...
+
+		xgbe@2f00000 {
+
+			...
+
+			xgbe0: interface-0 {
+				phys = <&xserdes_lane0>;
+				...
+			};
+			xgbe1: interface-1 {
+				phys = <&xserdes_lane1>;
+				...
+			};
+
+			...
+		};
+	};
+
+	...
+
+};

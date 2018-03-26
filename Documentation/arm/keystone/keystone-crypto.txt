@@ -1,0 +1,35 @@
+﻿* Texas Instruments Keystone Security Accelerator Crypto Driver
+
+The Security Accelerator (SA) is one of the main components of the Network
+Coprocessor (NETCP) peripheral. The SA works together with the Packet
+Accelerator (PA) and the Gigabit Ethernet (GbE) switch subsystem to
+form a network processing solution. The purpose of the SA is to assist
+the host by performing security related tasks. The SA provides hardware
+engines to perform encryption, decryption, and authentication operations on
+packets for commonly supported protocols, including IPsec ESP and AH, SRTP,
+and Air Cipher.
+
+See the http://www.ti.com/lit/ug/sprugy6b/sprugy6b.pdf for details.
+
+Keystone Linux kernel implements a crypto driver which offloads crypto
+algorithm processing to CP_ACE. Crypto driver registers algorithm implementations
+in the kernel's crypto algorithm management framework. Since the primary use
+case for this driver is IPSec ESP offload, it currently registers only AEAD
+algorithms.
+
+Following algorithms are supported by the driver:
+1. authenc(hmac(sha1),cbc(aes))
+2. authenc(hmac(sha1),cbc(des3-ede))
+3. authenc(xcbc(aes),cbc(aes))
+4. authenc(xcbc(aes),cbc(des3-ede))
+
+The driver source code:
+drivers/crypto/keystone-*.[ch]
+
+See the Documentation/devicetree/bindings/soc/ti/keystone-crypto.txt for
+configuration.
+
+In order to work driver requires the sa_mci.fw firmware. By default driver compiled as kernel
+module and loaded after root file system is mounted, it is enough to place the firmware to
+the /lib/firmware directory.
+

@@ -1,0 +1,21 @@
+Texas Instruments PTP Boundary Clcok Internal Sync Monitor
+==========================================================
+
+Required properties:
+- compatible       : Should be
+                        "ti,am57-bc" for AM57xx SoCs
+
+Example:
+========
+
+In am57xx-idk-common.dts
+	ptp_bc: ptp_bc {
+		compatible = "ti,am57-bc";
+		status = "disabled";
+	};
+
+To enable for am572x-idk, in am572x-idk.dts:
+
+&ptp_bc {
+	status = "okay";
+};
