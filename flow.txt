@@ -1,0 +1,194 @@
+<零>配置
+$ cat include/config.h
+/* Automatically generated - do not edit */
+#define CONFIG_BOARDDIR board/ti/am335x
+#include <config_defaults.h>
+#include <config_uncmd_spl.h>
+#include <configs/am335x_evm.h>
+#include <asm/config.h>
+#include <linux/kconfig.h>
+#include <config_fallbacks.h>
+
+<一>文件
+MLO: spl/u-boot-spl
+u-boot.img: u-boot
+
+<二>流程
+第一阶段
+@@@start.S (arch\arm\cpu\armv7)	9659	2018/3/27
+reset:
+	/* 保存重要参数 */
+	b	save_boot_params
+	/* 关中断、进入SVC32模式 */
+	mrs	r0, cpsr
+	and	r1, r0, #0x1f		@ mask mode bits
+	teq	r1, #0x1a		@ test for HYP mode
+	bicne	r0, r0, #0x1f		@ clear all mode bits
+	orrne	r0, r0, #0x13		@ set SVC mode
+	orr	r0, r0, #0xc0		@ disable FIQ and IRQ
+	/* 设置向量表 */
+	mrc	p15, 0, r0, c1, c0, 0	@ Read CP15 SCTLR Register
+	bic	r0, #CR_V		@ V = 0
+	mcr	p15, 0, r0, c1, c0, 0	@ Write CP15 SCTLR Register
+	/* 执行初始化 */
+	bl	cpu_init_cp15
+		ENTRY(cpu_init_cp15)
+			// 关闭I/D caches
+			mov	r0, #0			@ set up for MCR
+			mcr	p15, 0, r0, c8, c7, 0	@ invalidate TLBs
+			// 关MMU
+			mrc	p15, 0, r0, c1, c0, 0
+			bic	r0, r0, #0x00002000	@ clear bits 13 (--V-)
+			bic	r0, r0, #0x00000007	@ clear bits 2:0 (-CAM)			
+		ENDPROC(cpu_init_cp15)
+	bl	cpu_init_crit
+		ENTRY(cpu_init_crit)
+			// 调用lowlevel_init
+			b	lowlevel_init		@ go setup pll,mux,memory
+				@@@lowlevel_init.S (arch\arm\cpu\armv7)	1501	2018/3/27
+				WEAK(lowlevel_init)
+					// 设置临时栈区
+					ldr	sp, =CONFIG_SYS_INIT_SP_ADDR
+					// 设置全局数据
+					ldr	r9, =gdata
+					// 调用s_init
+					bl	s_init
+						@@@Board.c (arch\arm\mach-omap2\am33xx)	9196	2018/3/27
+						void s_init(void) // 空函数
+				ENDPROC(lowlevel_init)
+		ENDPROC(cpu_init_crit)
+	bl	_main
+		@@@crt0.S (arch\arm\lib)	4972	2018/3/27
+		ENTRY(_main)
+			/* 设置栈，调用board_init_f(0) */
+			ldr	r0, =(CONFIG_SYS_INIT_SP_ADDR)
+			bl	board_init_f
+				@@@Board.c (arch\arm\mach-omap2\am33xx)	9196	2018/3/27
+				#ifdef CONFIG_SPL_BUILD
+				void board_init_f(ulong dummy)
+					// 初始化硬件数据
+					hw_data_init();
+						@@@Hw_data.c (arch\arm\mach-omap2\am33xx)	384	2018/3/27
+						void hw_data_init(void)
+							*ctrl = &am33xx_ctrl;
+					// 早期系统初始化
+					early_system_init();
+						void early_system_init(void)
+							// 关看门狗
+							watchdog_disable();
+							// 配置串口引脚
+							set_uart_mux_conf();
+								void set_uart_mux_conf(void)
+									enable_uart0_pin_mux();
+										configure_module_pin_mux(uart0_pin_mux);
+							// 设置必要时钟
+							setup_early_clocks();
+								@@@Clock.c (arch\arm\mach-omap2\am33xx)	6518	2018/3/27
+								void setup_early_clocks(void)
+									// 设置串口时钟
+									setup_clocks_for_console();
+										@@@Clock_am33xx.c (arch\arm\mach-omap2\am33xx)	8965	2018/3/27
+										void setup_clocks_for_console(void)
+												clrsetbits_le32(&cmwkup->wkclkstctrl, CD_CLKCTRL_CLKTRCTRL_MASK,
+									// 配置其他必须时钟
+									enable_basic_clocks();
+										@@@Clock_am33xx.c (arch\arm\mach-omap2\am33xx)	8965	2018/3/27
+										void enable_basic_clocks(void)
+											do_enable_clocks(clk_domains, clk_modules_explicit_en, 1);
+											writel(0x1, &cmdpll->clktimer2clk);
+									// timer初始化
+									timer_init();
+										@@@Timer.c (arch\arm\mach-omap2)	2376	2018/3/27
+										int timer_init(void)
+											writel(TIMER_LOAD_VAL, &timer_base->tldr);
+							// 串口复位，让串口工作
+							uart_soft_reset();
+								static void uart_soft_reset(void)
+									writel(regval, &uart_base->uartsyscfg);
+									writel(regval, &uart_base->uartsyscfg);
+							// 保存必要参数
+							save_omap_boot_params();
+							// 判断板卡类型
+							do_board_detect();
+								@@@Board.c (board\ti\am335x)	26843	2018/3/27
+								void do_board_detect(void)
+									enable_i2c0_pin_mux();
+									if (ti_i2c_eeprom_am_get(CONFIG_EEPROM_BUS_ADDRESS,
+							// spl其他初始化
+							spl_early_init();
+								@@@Spl.c (common\spl)	13561	2018/3/27
+								int spl_early_init(void)
+									ret = spl_common_init(true);
+										static int spl_common_init(bool setup_malloc)
+											ret = bootstage_init(true);
+					// 早期单板初始化
+					board_early_init_f();
+						int board_early_init_f(void)
+							prcm_init();
+								@@@Clock.c (arch\arm\mach-omap2\am33xx)	6518	2018/3/27
+								void prcm_init(void)
+									// 设置核心时钟
+									scale_vcores();
+										@@@Board.c (board\ti\am335x)	26843	2018/3/27
+										void scale_vcores(void)
+											gpi2c_init();
+											scale_vcores_generic(freq);
+									setup_dplls();
+										@@@Clock.c (arch\arm\mach-omap2\am33xx)	6518	2018/3/27
+										static void setup_dplls(void)
+											do_setup_dpll(&dpll_core_regs, params);
+											do_setup_dpll(&dpll_mpu_regs, params);
+											do_setup_dpll(&dpll_per_regs, params);
+											do_setup_dpll(&dpll_ddr_regs, params);
+							set_mux_conf_regs();
+								@@@Board.c (board\ti\am335x)	26843	2018/3/27
+								void set_mux_conf_regs(void)
+									enable_board_pin_mux();
+										void enable_board_pin_mux(void)
+											else if (board_is_evm_sk()) {
+												/* Starter Kit EVM */
+												configure_module_pin_mux(i2c1_pin_mux);
+												configure_module_pin_mux(gpio0_7_pin_mux);
+												configure_module_pin_mux(rgmii1_pin_mux);
+												configure_module_pin_mux(mmc0_pin_mux_sk_evm);
+											}
+					// 内存初始化
+					sdram_init();
+						@@@Board.c (board\ti\am335x)	26843	2018/3/27
+						void sdram_init(void)
+							if (board_is_evm_sk()) {
+								/*
+								 * EVM SK 1.2A and later use gpio0_7 to enable DDR3.
+								 * This is safe enough to do on older revs.
+								 */
+								gpio_request(GPIO_DDR_VTT_EN, "ddr_vtt_en");
+								gpio_direction_output(GPIO_DDR_VTT_EN, 1);
+							}							
+			/* 重定位栈 */
+			bl	spl_relocate_stack_gd
+				@@@Spl.c (common\spl)	13561	2018/3/27
+				ulong spl_relocate_stack_gd(void)
+					ptr = CONFIG_SPL_STACK_R_ADDR - roundup(sizeof(gd_t),16);
+					new_gd = (gd_t *)ptr;
+					memcpy(new_gd, (void *)gd, sizeof(gd_t));
+			/* 清除bss段 */
+			clbss_l:cmp	r0, r1			/* while not at end of BSS */
+				strlo	r2, [r0]		/* clear 32-bit BSS word */
+				addlo	r0, r0, #4		/* move to next */
+				blo	clbss_l
+			/* 调用board_init_r(gd_t *id, ulong dest_addr) */
+			mov     r0, r9                  /* gd_t */
+			ldr	pc, =board_init_r	/* this is auto-relocated! */
+				@@@Spl.c (common\spl)	13561	2018/3/27
+				void board_init_r(gd_t *dummy1, ulong dummy2)
+					spl_set_bd();
+					dram_init_banksize();
+					timer_init();
+					board_boot_order(spl_boot_list);
+					// 判断启动方式
+					switch (spl_image.os) {
+						case IH_OS_U_BOOT:
+						case IH_OS_LINUX:
+						...
+		ENDPROC(_main)
+
