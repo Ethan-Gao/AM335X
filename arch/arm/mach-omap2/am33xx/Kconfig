@@ -61,6 +61,40 @@ config TARGET_AM335X_EVM
 	  to write software and develop hardware around
 	  an AM335x processor subsystem.
 
+config TARGET_AM335X_ETHAN
+	bool "Support am335x_ethan"
+	select BOARD_LATE_INIT
+	select DM
+	select DM_SERIAL
+	select DM_GPIO
+	select TI_I2C_BOARD_DETECT
+	imply SPL_ENV_SUPPORT
+	imply SPL_EXT_SUPPORT
+	imply SPL_FAT_SUPPORT
+	imply SPL_GPIO_SUPPORT
+	imply SPL_I2C_SUPPORT
+	imply SPL_LIBCOMMON_SUPPORT
+	imply SPL_LIBDISK_SUPPORT
+	imply SPL_LIBGENERIC_SUPPORT
+	imply SPL_MMC_SUPPORT
+	imply SPL_NAND_SUPPORT
+	imply SPL_POWER_SUPPORT
+	imply SPL_SERIAL_SUPPORT
+	imply SPL_WATCHDOG_SUPPORT
+	imply SPL_YMODEM_SUPPORT
+	imply SPL_SYS_MALLOC_SIMPLE
+	imply SPL_SEPARATE_BSS
+	imply SPL_DM
+	imply SPL_DM_SEQ_ALIAS
+	imply SPL_OF_LIBFDT
+	help
+	  This option specifies support for the AM335x
+	  GP and HS EVM development platforms. The AM335x
+	  GP EVM is a standalone test, development, and
+	  evaluation module system that enables developers
+	  to write software and develop hardware around
+	  an AM335x processor subsystem.
+
 config TARGET_AM335X_BALTOS
 	bool "Support am335x_baltos"
 	select BOARD_LATE_INIT

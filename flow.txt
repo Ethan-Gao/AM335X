@@ -1,10 +1,10 @@
 <零>配置
 $ cat include/config.h
 /* Automatically generated - do not edit */
-#define CONFIG_BOARDDIR board/ti/am335x
+#define CONFIG_BOARDDIR board/ethan/ethan
 #include <config_defaults.h>
 #include <config_uncmd_spl.h>
-#include <configs/am335x_evm.h>
+#include <configs/am335x_ethan.h>
 #include <asm/config.h>
 #include <linux/kconfig.h>
 #include <config_fallbacks.h>
@@ -110,7 +110,7 @@ reset:
 							save_omap_boot_params();
 							// 判断板卡类型
 							do_board_detect();
-								@@@Board.c (board\ti\am335x)	26843	2018/3/27
+								@@@Board.c (board\ethan\ethan)	26843	2018/3/27
 								void do_board_detect(void)
 									enable_i2c0_pin_mux();
 									if (ti_i2c_eeprom_am_get(CONFIG_EEPROM_BUS_ADDRESS,
@@ -129,7 +129,7 @@ reset:
 								void prcm_init(void)
 									// 设置核心时钟
 									scale_vcores();
-										@@@Board.c (board\ti\am335x)	26843	2018/3/27
+										@@@Board.c (board\ethan\ethan)	26843	2018/3/27
 										void scale_vcores(void)
 											gpi2c_init();
 											scale_vcores_generic(freq);
@@ -141,7 +141,7 @@ reset:
 											do_setup_dpll(&dpll_per_regs, params);
 											do_setup_dpll(&dpll_ddr_regs, params);
 							set_mux_conf_regs();
-								@@@Board.c (board\ti\am335x)	26843	2018/3/27
+								@@@Board.c (board\ethan\ethan)	26843	2018/3/27
 								void set_mux_conf_regs(void)
 									enable_board_pin_mux();
 										void enable_board_pin_mux(void)
@@ -154,7 +154,7 @@ reset:
 											}
 					// 内存初始化
 					sdram_init();
-						@@@Board.c (board\ti\am335x)	26843	2018/3/27
+						@@@Board.c (board\ethan\ethan)	26843	2018/3/27
 						void sdram_init(void)
 							if (board_is_evm_sk()) {
 								/*
@@ -181,11 +181,25 @@ reset:
 			ldr	pc, =board_init_r	/* this is auto-relocated! */
 				@@@Spl.c (common\spl)	13561	2018/3/27
 				void board_init_r(gd_t *dummy1, ulong dummy2)
+					// 设置bd变量
 					spl_set_bd();
+					// 设置dram大小
 					dram_init_banksize();
+					// timer初始化
 					timer_init();
+					// 调用spl_board_init函数
+					spl_board_init();
+						@@@Boot-common.c (arch\arm\mach-omap2)	6278	2018/3/27
+						void spl_board_init(void)
+							@@@Spl.c (common\spl)	13561	2018/3/27
+							preloader_console_init();
+								// 串口初始化
+								serial_init();		/* serial communications setup */
+								// 打印信息
+								puts("\nU-Boot SPL " PLAIN_VERSION " (" U_BOOT_DATE " - " \
+					// 获取启动方式
 					board_boot_order(spl_boot_list);
-					// 判断启动方式
+					// 进行相应启动
 					switch (spl_image.os) {
 						case IH_OS_U_BOOT:
 						case IH_OS_LINUX:
