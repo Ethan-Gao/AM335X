@@ -28,7 +28,7 @@
 #define CONFIG_MACH_TYPE		MACH_TYPE_AM335XEVM
 
 /* Clock Defines */
-#define V_OSCK				24000000  /* Clock output from T2 */
+#define V_OSCK				25000000  /* Clock output from T2 */
 #define V_SCLK				(V_OSCK)
 
 /* Custom script for NOR */
@@ -331,5 +331,8 @@
 #define CONFIG_CLOCK_SYNTHESIZER
 #define CLK_SYNTHESIZER_I2C_ADDR 0x65
 #endif
+
+#define CONFIG_SYS_NS16550_SERIAL
+#define CONFIG_SYS_NS16550_REG_SIZE     (-4)
 
 #endif	/* ! __CONFIG_AM335X_ETHAN_H */

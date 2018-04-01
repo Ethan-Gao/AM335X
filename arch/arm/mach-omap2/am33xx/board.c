@@ -339,6 +339,7 @@ void early_system_init(void)
 	set_uart_mux_conf();
 	setup_early_clocks();
 	uart_soft_reset();
+	preloader_console_init();
 #ifdef CONFIG_SPL_BUILD
 	/*
 	 * Save the boot parameters passed from romcode.
