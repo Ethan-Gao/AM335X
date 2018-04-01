@@ -209,7 +209,7 @@ int __maybe_unused ti_i2c_eeprom_am_get(int bus_addr, int dev_addr)
 		return 0; /* EEPROM has already been read */
 #endif
 
-	/* Initialize with a known bad marker for i2c fails.. */
+	/* Initialize with a known bad marker for i2c fails..
 	ep->header = TI_DEAD_EEPROM_MAGIC;
 	ep->name[0] = 0x0;
 	ep->version[0] = 0x0;
@@ -220,9 +220,10 @@ int __maybe_unused ti_i2c_eeprom_am_get(int bus_addr, int dev_addr)
 			       sizeof(am_ep), (uint8_t *)&am_ep);
 	if (rc)
 		return rc;
+	*/
 
-	ep->header = am_ep.header;
-	strlcpy(ep->name, am_ep.name, TI_EEPROM_HDR_NAME_LEN + 1);
+	ep->header = TI_EEPROM_HEADER_MAGIC;
+	strlcpy(ep->name, "A335X_SK", TI_EEPROM_HDR_NAME_LEN + 1);
 	ti_eeprom_string_cleanup(ep->name);
 
 	/* BeagleBone Green '1' eeprom, board_rev: 0x1a 0x00 0x00 0x00 */
