@@ -12,11 +12,11 @@ branch: **kernel**
 git from: **git://git.ti.com/processor-sdk/processor-sdk-linux.git**  
 refer to:  **http://processors.wiki.ti.com/index.php/Linux_Kernel_Users_Guide**
 
-> ROOTFS
+> BUILDROOT
 
-branch: **rootfs**  
-git from: **git://arago-project.org/git/projects/oe-layersetup.git**  
-refer to:  **http://processors.wiki.ti.com/index.php/Processor_SDK_Building_The_SDK**
+branch: **buildroot**  
+git from: **git://git.busybox.net/buildroot**  
+refer to:  **https://buildroot.org/docs.html**
 
 > OTHERS
 
