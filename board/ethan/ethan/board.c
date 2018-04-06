@@ -796,12 +796,12 @@ static struct cpsw_slave_data cpsw_slaves[] = {
 	{
 		.slave_reg_ofs	= 0x208,
 		.sliver_reg_ofs	= 0xd80,
-		.phy_addr	= 0,
+		.phy_addr	= 4,
 	},
 	{
 		.slave_reg_ofs	= 0x308,
 		.sliver_reg_ofs	= 0xdc0,
-		.phy_addr	= 1,
+		.phy_addr	= 6,
 	},
 };
 
@@ -881,7 +881,7 @@ int board_eth_init(bd_t *bis)
 		cpsw_slaves[0].phy_addr = 1;
 		cpsw_slaves[1].phy_addr = 3;
 	} else {
-		writel((RGMII_MODE_ENABLE | RGMII_INT_DELAY), &cdev->miisel);
+		writel(RGMII_MODE_ENABLE, &cdev->miisel);
 		cpsw_slaves[0].phy_if = cpsw_slaves[1].phy_if =
 				PHY_INTERFACE_MODE_RGMII;
 	}
