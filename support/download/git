@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+
+# We want to catch any unexpected failure, and exit immediately
+set -e
+
+# Download helper for git, to be called from the download wrapper script
+#
+# Options:
+#   -q          Be quiet.
+#   -r          Clone and archive sub-modules.
+#   -o FILE     Generate archive in FILE.
+#   -u URI      Clone from repository at URI.
+#   -c CSET     Use changeset CSET.
+#   -n NAME     Use basename NAME.
+#
+# Environment:
+#   GIT      : the git command to call
+
+verbose=
+recurse=0
+while getopts "${BR_BACKEND_DL_GETOPTS}" OPT; do
+    case "${OPT}" in
+    q)  verbose=-q; exec >/dev/null;;
+    r)  recurse=1;;
+    o)  output="${OPTARG}";;
+    u)  uri="${OPTARG}";;
+    c)  cset="${OPTARG}";;
+    d)  dl_dir="${OPTARG}";;
+    n)  basename="${OPTARG}";;
+    :)  printf "option '%s' expects a mandatory argument\n" "${OPTARG}"; exit 1;;
+    \?) printf "unknown option '%s'\n" "${OPTARG}" >&2; exit 1;;
+    esac
+done
+
+shift $((OPTIND-1)) # Get rid of our options
+
+# Caller needs to single-quote its arguments to prevent them from
+# being expanded a second time (in case there are spaces in them)
+_git() {
+    eval ${GIT} "${@}"
+}
+
+# We want to check if a cache of the git clone of this repo already exists.
+git_cache="${dl_dir}/git"
+
+# If the cache directory doesn't exists, init a new repo, which will be
+# fetch'ed later.
+if [ ! -d "${git_cache}" ]; then
+    _git init "'${git_cache}'"
+    _git -C "'${git_cache}'" remote add origin "'${uri}'"
+fi
+
+pushd "${git_cache}" >/dev/null
+
+_git remote set-url origin "'${uri}'"
+
+# Try to fetch with limited depth, since it is faster than a full clone - but
+# that only works if the version is a ref (tag or branch). Before trying to do
+# a shallow clone we check if ${cset} is in the list provided by git ls-remote.
+# If not we fallback to a full fetch.
+#
+# Messages for the type of clone used are provided to ease debugging in
+# case of problems
+git_done=0
+if [ -n "$(_git ls-remote origin "'${cset}'" 2>&1)" ]; then
+    printf "Doing a shallow fetch\n"
+    if _git fetch "${@}" --depth 1 origin "'${cset}'"; then
+        git_done=1
+    else
+        printf "Shallow fetch failed, falling back to fetching all refs\n"
+    fi
+fi
+if [ ${git_done} -eq 0 ]; then
+    printf "Fetching all references\n"
+    _git fetch origin -t
+fi
+
+# Try to get the special refs exposed by some forges (pull-requests for
+# github, changes for gerrit...). There is no easy way to know whether
+# the cset the user passed us is such a special ref or a tag or a sha1
+# or whatever else. We'll eventually fail at checking out that cset,
+# below, if there is an issue anyway. Since most of the cset we're gonna
+# have to clone are not such special refs, consign the output to oblivion
+# so as not to alarm unsuspecting users, but still trace it as a warning.
+if ! _git fetch origin "'${cset}:${cset}'" >/dev/null 2>&1; then
+    printf "Could not fetch special ref '%s'; assuming it is not special.\n" "${cset}"
+fi
+
+# Checkout the required changeset, so that we can update the required
+# submodules.
+_git checkout -q "'${cset}'"
+
+# Get date of commit to generate a reproducible archive.
+# %cD is RFC2822, so it's fully qualified, with TZ and all.
+date="$( _git log -1 --pretty=format:%cD )"
+
+# There might be submodules, so fetch them.
+if [ ${recurse} -eq 1 ]; then
+    _git submodule update --init --recursive
+fi
+
+# Generate the archive, sort with the C locale so that it is reproducible.
+# We do not want the .git dir; we keep other .git files, in case they are the
+# only files in their directory.
+# The .git dir would generate non reproducible tarballs as it depends on
+# the state of the remote server. It also would generate large tarballs
+# (gigabytes for some linux trees) when a full clone took place.
+find . -not -type d \
+	-and -not -path "./.git/*" >"${output}.list"
+LC_ALL=C sort <"${output}.list" >"${output}.list.sorted"
+
+# Create GNU-format tarballs, since that's the format of the tarballs on
+# sources.buildroot.org and used in the *.hash files
+tar cf - --transform="s/^\./${basename}/" \
+	--numeric-owner --owner=0 --group=0 --mtime="${date}" --format=gnu \
+         -T "${output}.list.sorted" >"${output}.tar"
+gzip -6 -n <"${output}.tar" >"${output}"
+
+rm -f "${output}.list"
+rm -f "${output}.list.sorted"
+
+popd >/dev/null
