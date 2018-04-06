@@ -1,0 +1,4 @@
+make distclean
+make am335x_evm_defconfig
+make menuconfig
+make -j4
